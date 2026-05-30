@@ -1,35 +1,47 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2021 Tachibana Securities Co., Ltd. All rights reserved.
+# Copyright (c) 2026 Tachibana Securities Co., Ltd. All rights reserved.
 
 # 2021.07.08,   yo.
 # 2022.10.20 reviced,   yo.
 # 2025.07.27 reviced,   yo.
+# 2025.07.27 reviced,   yo.
+# 2026.05.30 reviced,   yo.
 #
 # 立花証券ｅ支店ＡＰＩ利用のサンプルコード
 #
 # 動作確認
-# Python 3.11.2 / debian12
-# API v4r7
-#
-# 機能: 現物株預り一覧取得を行ないます。
-#
+# Python 3.13.5 / debian13
+# API v4r9
 #
 # 利用方法: 
-# 事前に「e_api_login_tel.py」を実行して、
-# 仮想URL（1日券）等を取得しておいてください。
-# 「e_api_login_tel.py」と同じディレクトリで実行してください。
-#
-#
+# 事前に「e_api_login_pkcs12.py」を実行して、仮想URL等を取得しておいてください。
+# 実行は「e_api_login_pkcs12.py」と同じディレクトリで行ってください。
+# 
 # == ご注意: ========================================
 #   本番環境にに接続した場合、実際に市場に注文が出ます。
 #   市場で約定した場合取り消せません。
 # ==================================================
 #
+# 機能: 現物株預り一覧取得を行ないます。
+# 
 
 import urllib3
 import datetime
 import json
 import time
+
+# =========================================================================
+# --- 設定項目（定数定義：セットアップマニュアルに完全準拠） ---
+# =========================================================================
+FNAME_URL_INFO = "file_url_info.txt"                # API接続情報ファイル
+FNAME_LOGIN_RESPONSE = "./.pki/file_login_response.txt"  # ログイン応答保存先
+FNAME_INFO_P_NO = "file_info_p_no.txt"              # p_no保存ファイル
+FNAME_PASSWD2 = "./.pki/file_pwd2.txt"              # p_no保存ファイル
+
+# コマンド用パラメーター -------------------    
+S_ISSUE_CODE  = ''     # 銘柄コード  '':省略時全銘柄取得
+
+# =========================================================================
 
 
 #--- 共通コード ------------------------------------------------------
@@ -46,7 +58,7 @@ class class_req :
 
 
 # 口座属性クラス
-class class_def_account_property:
+class ClassDefAccountProperty:
     def __init__(self):
         self.sUserId = ''           # userid
         self.sPassword = ''         # password
@@ -55,7 +67,7 @@ class class_def_account_property:
         self.sJsonOfmt = 5          # 返り値の表示形式指定
         
 # ログイン属性クラス
-class class_def_login_property:
+class ClassDefLoginProperty:
     def __init__(self):
         self.p_no = 0                       # 累積p_no
         self.sJsonOfmt = ''                 # 返り値の表示形式指定
@@ -230,7 +242,7 @@ def func_replace_urlecnode( str_input ):
 def func_read_from_file(str_fname):
     str_read = ''
     try:
-        with open(str_fname, 'r', encoding = 'utf_8') as fin:
+        with open(str_fname, 'r', encoding = 'utf_8_sig') as fin:
             while True:
                 line = fin.readline()
                 if not len(line):
@@ -240,6 +252,10 @@ def func_read_from_file(str_fname):
     except IOError as e:
         print('ファイルを読み込めません!!! ファイル名：',str_fname)
         print(type(e))
+        raise e
+
+
+
 
 
 # 機能: ファイルに書き込む
@@ -325,14 +341,14 @@ def func_api_req(str_url):
 # 機能： アカウント情報をファイルから取得する
 # 引数1: 口座情報を保存したファイル名
 # 引数2: 口座情報（class_def_account_property型）データ
-def func_get_acconut_info(fname, class_account_property):
+def func_get_url_info(fname, class_account_property):
     str_account_info = func_read_from_file(fname)
     # JSON形式の文字列を辞書型で取り出す
     json_account_info = json.loads(str_account_info)
 
-    class_account_property.sUserId = json_account_info.get('sUserId')
-    class_account_property.sPassword = json_account_info.get('sPassword')
-    class_account_property.sSecondPassword = json_account_info.get('sSecondPassword')
+    # class_account_property.sUserId = json_account_info.get('sUserId')
+    # class_account_property.sPassword = json_account_info.get('sPassword')
+    # class_account_property.sSecondPassword = json_account_info.get('sSecondPassword')
     class_account_property.sUrl = json_account_info.get('sUrl')
 
     # 返り値の表示形式指定
@@ -342,7 +358,7 @@ def func_get_acconut_info(fname, class_account_property):
 
 
 # 機能： ログイン情報をファイルから取得する
-# 引数1: ログイン情報を保存したファイル名（fname_login_response = "e_api_login_response.txt"）
+# 引数1: ログイン情報を保存したファイル名（fname_login_response = "file_login_response.txt"）
 # 引数2: ログインデータ型（class_def_login_property型）
 def func_get_login_info(str_fname, class_login_property):
     str_login_respons = func_read_from_file(str_fname)
@@ -523,42 +539,28 @@ def func_get_genbutu_kabu_list(int_p_no,
 # ======================================================================================================
 if __name__ == "__main__":
 
-    # --- 利用時に変数を設定してください -------------------------------------------------------
-
-    ## コマンド用パラメーター -------------------    
-    my_sIssueCode  = ''     # 銘柄コード  '':省略時全銘柄取得
-
-
-
-    # --- 以上設定項目 -------------------------------------------------------------------------
-
-    # --- ファイル名等を設定（実行ファイルと同じディレクトリ） ---------------------------------------
-    fname_account_info = "e_api_account_info.txt"
-    fname_login_response = "e_api_login_response.txt"
-    fname_info_p_no = "e_api_info_p_no.txt"
-    # --- 以上ファイル名設定 -------------------------------------------------------------------------
-
-    my_account_property = class_def_account_property()
-    my_login_property = class_def_login_property()
+    my_account_property = ClassDefAccountProperty()
+    my_login_property = ClassDefLoginProperty()
     
     # 口座情報をファイルから読み込む。
-    func_get_acconut_info(fname_account_info, my_account_property)
+    func_get_url_info(FNAME_URL_INFO, my_account_property)
+    my_account_property.sSecondPassword = func_read_from_file(FNAME_PASSWD2)
     
     # ログイン応答を保存した「e_api_login_response.txt」から、仮想URLと課税flgを取得
-    func_get_login_info(fname_login_response, my_login_property)
+    func_get_login_info(FNAME_LOGIN_RESPONSE, my_login_property)
 
     
     my_login_property.sJsonOfmt = my_account_property.sJsonOfmt                   # 返り値の表示形式指定
     my_login_property.sSecondPassword = func_replace_urlecnode(my_account_property.sSecondPassword)        # 22.第二パスワード  APIでは第２暗証番号を省略できない。 関連資料:「立花証券・e支店・API、インターフェース概要」の「3-2.ログイン、ログアウト」参照
     
     # 現在（前回利用した）のp_noをファイルから取得する
-    func_get_p_no(fname_info_p_no, my_login_property)
+    func_get_p_no(FNAME_INFO_P_NO, my_login_property)
     my_login_property.p_no = my_login_property.p_no + 1
 
     print()
     print('-- 現物株預り一覧 取得 -------------------------------------------------------------')
     dic_return = func_get_genbutu_kabu_list(my_login_property.p_no,
-                                                my_sIssueCode,
+                                                S_ISSUE_CODE,
                                                 my_login_property)
     # 送信項目、戻り値の解説は、マニュアル「立花証券・ｅ支店・ＡＰＩ（ｖ〇）、REQUEST I/F、機能毎引数項目仕様」
     # p8/46 No.8 CLMGenbutuKabuList を参照してください
@@ -623,5 +625,5 @@ if __name__ == "__main__":
     print()    
     print()    
     # "p_no"を保存する。
-    func_save_p_no(fname_info_p_no, my_login_property.p_no)
+    func_save_p_no(FNAME_INFO_P_NO, my_login_property.p_no)
        
