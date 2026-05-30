@@ -544,7 +544,7 @@ if __name__ == "__main__":
     
     # 口座情報をファイルから読み込む。
     func_get_url_info(FNAME_URL_INFO, my_account_property)
-    my_account_property.sSecondPassword = func_read_from_file(FNAME_PASSWD2)
+    my_account_property.sSecondPassword = func_read_from_file(FNAME_PASSWD2).strip()
     
     # ログイン応答を保存した「e_api_login_response.txt」から、仮想URLと課税flgを取得
     func_get_login_info(FNAME_LOGIN_RESPONSE, my_login_property)
